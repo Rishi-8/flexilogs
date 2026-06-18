@@ -11,10 +11,13 @@ import {
   useUpdateCategory,
 } from "@/lib/queries";
 import type { Category } from "@/lib/types";
+import { useRouter } from "next/navigation";
 import { COLOR_PALETTE } from "@/lib/defaults";
 import { cn } from "@/lib/utils";
+import { useUi } from "@/lib/store";
 
 export default function CategoriesPage() {
+  const router = useRouter();
   const { data: categories = [], isPending } = useCategories();
   const { data: logs = [] } = useLogs();
   const createCategory = useCreateCategory();
@@ -27,6 +30,16 @@ export default function CategoriesPage() {
 
   const counts = new Map<string, number>();
   for (const l of logs) counts.set(l.categoryId, (counts.get(l.categoryId) ?? 0) + 1);
+
+  const handleCategoryClick = (categoryId: string) => {
+    useUi.setState({
+      search: "",
+      filterCategoryIds: [categoryId],
+      filterTags: [],
+      filterRange: { from: null, to: null },
+    });
+    router.push("/search");
+  };
 
   return (
     <div className="p-4 md:p-8 max-w-3xl">
@@ -91,7 +104,8 @@ export default function CategoriesPage() {
           <motion.div
             key={c.id}
             layout
-            className="rounded-xl border border-border bg-surface p-4 flex items-center gap-3 hover:shadow-soft transition"
+            onClick={() => handleCategoryClick(c.id)}
+            className="cursor-pointer rounded-xl border border-border bg-surface p-4 flex items-center gap-3 hover:shadow-soft hover:border-accent/50 active:scale-[0.99] transition"
           >
             <div
               className="h-10 w-10 rounded-lg shrink-0"
@@ -104,7 +118,8 @@ export default function CategoriesPage() {
               </div>
             </div>
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setCreating(false);
                 setEditing(c);
               }}
@@ -114,7 +129,8 @@ export default function CategoriesPage() {
               <Pencil size={14} />
             </button>
             <button
-              onClick={async () => {
+              onClick={async (e) => {
+                e.stopPropagation();
                 if (categories.length === 1) {
                   alert("Keep at least one category.");
                   return;
